@@ -1,0 +1,34 @@
+cmake_minimum_required(VERSION 2.8.3)
+project(ThreadPool)
+add_compile_options(-std=c++11)
+
+SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY  ${PROJECT_SOURCE_DIR}/bin)
+
+include_directories(
+  include
+)
+
+link_directories(
+   ${PROJECT_SOURCE_DIR}/lib
+   ${PROJECT_SOURCE_DIR}/thirdparty/spdlog/lib
+)
+
+set(SRC_FILE
+    ${PROJECT_SOURCE_DIR}/src/LogComponent.cpp
+    ${PROJECT_SOURCE_DIR}/src/Task.cpp
+    ${PROJECT_SOURCE_DIR}/src/ThreadPool.cpp
+    )
+
+add_library(Thread STATIC 
+            ${SRC_FILE}
+            )
+            
+target_link_libraries(Thread  
+            ${catkin_LIBRARIES}
+            spdlog
+            )
+
+add_executable(ThreadPool_main excample/main.cpp)
+target_link_libraries(ThreadPool_main Thread)
