@@ -5,7 +5,6 @@
 
 #include <memory>
 #include "Task.h"
-#include "glog/logging.h"
 
 // 执行传入的 task的Execute()函数
 void ThreadPoolInterface::Execute(Task* task) { task->Execute(); }
@@ -17,7 +16,7 @@ void ThreadPoolInterface::SetThreadPool(Task* task) {
 
 // 根据传入的数字, 进行线程池的构造, DoWork()函数开始了一个始终执行的for循环
 ThreadPool::ThreadPool(int num_threads) {
-  CHECK_GT(num_threads, 0) << "ThreadPool requires a positive num_threads!";
+  //CHECK_GT(num_threads, 0) << "ThreadPool requires a positive num_threads!";
   std::lock_guard<std::mutex> lock(mutex_);
   for (int i = 0; i != num_threads; ++i) {
     pool_.emplace_back([this]() { ThreadPool::DoWork(); });
@@ -28,7 +27,7 @@ ThreadPool::ThreadPool(int num_threads) {
 ThreadPool::~ThreadPool() {
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    CHECK(running_);
+    //CHECK(running_);
     running_ = false;
   }
   for (std::thread& thread : pool_) {
@@ -42,7 +41,7 @@ void ThreadPool::NotifyDependenciesCompleted(Task* task) {
 
   // 找到task的索引
   auto it = tasks_not_ready_.find(task);
-  CHECK(it != tasks_not_ready_.end());
+  //CHECK(it != tasks_not_ready_.end());
 
   // 加入到任务队列中
   task_queue_.push_back(it->second);
@@ -60,7 +59,7 @@ std::weak_ptr<Task> ThreadPool::Schedule(std::unique_ptr<Task> task) {
 
     // map::insert() 会返回pair<map::iterator,bool> 类型, 
     // 第一个值为迭代器, 第二个值为插入操作是否成功
-    CHECK(insert_result.second) << "Schedule called twice";
+    //CHECK(insert_result.second) << "Schedule called twice";
     shared_task = insert_result.first->second;
   }
   SetThreadPool(shared_task.get());
@@ -73,7 +72,7 @@ void ThreadPool::DoWork() {
   // This changes the per-thread nice level of the current thread on Linux. We
   // do this so that the background work done by the thread pool is not taking
   // away CPU resources from more important foreground threads.
-  CHECK_NE(nice(10), -1);
+  //CHECK_NE(nice(10), -1);
 #endif
 
   const auto predicate = [this](){
