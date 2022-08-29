@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <chrono>
 #include <numeric>
+#include <iostream>
 
 #include <memory>
 #include "Task.h"
@@ -29,6 +30,7 @@ ThreadPool::~ThreadPool() {
     std::lock_guard<std::mutex> lock(mutex_);
     //CHECK(running_);
     running_ = false;
+    std::cout<< "running_=" << running_<< std::endl;
   }
   for (std::thread& thread : pool_) {
     thread.join();
@@ -75,7 +77,7 @@ void ThreadPool::DoWork() {
   //CHECK_NE(nice(10), -1);
 #endif
 
-  const auto predicate = [this](){
+  const auto predicate = [this]()->bool{
     return !task_queue_.empty() || !running_;
   };
 
@@ -83,8 +85,11 @@ void ThreadPool::DoWork() {
   for (;;) {
     std::shared_ptr<Task> task;
     {
-      std::lock_guard<std::mutex> lock(mutex_);
+      //std::lock_guard<std::mutex> lock(mutex_);
+      std::unique_lock<std::mutex> lock(mutex_);
       //mutex_.Await(absl::Condition(&predicate));//等condition修改
+      cv.wait(lock,predicate);
+      //std::cout<< "running" << std::endl;
 
       // map_builder.lua中设置的线程数, 4个线程处理同一个task_queue_
       // 如果任务队列不为空, 那就取出第一个task
@@ -92,6 +97,7 @@ void ThreadPool::DoWork() {
         task = std::move(task_queue_.front());
         task_queue_.pop_front();
       } else if (!running_) {
+        std::cout<< "return!!!"<< std::endl;
         return;
       }
     }

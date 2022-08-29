@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <mutex>
 #include <thread>
+#include <condition_variable>
 #include "Task.h"
 
 class Task;
@@ -62,6 +63,7 @@ class ThreadPool : public ThreadPoolInterface {
   void NotifyDependenciesCompleted(Task* task) override;
 
   std::mutex mutex_;
+  std::condition_variable cv;
 
   // 结束线程的标志
   bool running_ = true;

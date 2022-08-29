@@ -1,11 +1,17 @@
+//c++
 #include <iostream>
 #include <algorithm>
 #include <mutex>
 #include <thread>
 #include <chrono>
 #include <vector>
+#include <memory>
+
+//own
 #include "LogComponent.h"
 #include "ThreadPool.h"
+#include "Task.h"
+#include "WorkQueue.h"
 #include "TicToc.h"
 
 /*
@@ -88,28 +94,90 @@ int multi_thread_task()
     return add_result_0;
 }
 
+int thread_pool_task()
+{
+    std::vector<int> result_vec(7,0);
+    int& sum_result_0 = result_vec[0];
+
+    int thread_num = 4;
+    std::unique_ptr<ThreadPool> thread_pool = std::make_unique<ThreadPool>(1);
+    int result = 0;
+    std::unique_ptr<Task> task = std::make_unique<Task>();
+    task->SetWorkItem(
+        [&](){
+            sum_result_0 = sum_task(1,5);
+            std::cerr << "sum_result_0 = "<< sum_result_0 << std::endl;
+            }
+        );
+    thread_pool->Schedule(std::move(task));
+    
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    std::cerr << "sum_result_0_out = "<< sum_result_0 << std::endl;
+    return sum_result_0;
+}
+
 int main(int argc,char** argv)
 {
-    // int thread_num = 4;
-    // ThreadPool thread_pool(thread_num);
     TicToc clock_0;
     clock_0.Tic();
 
     int result_ref = ref_task();
     std::cout << "result_ref = "<< result_ref << std::endl;
 
-    int result_0 = operation_number_1();
-    std::cout << "result_0 = " << result_0 << " "
-              << ",clock_0_time = " << clock_0.Toc() << " ms" << std::endl;
+    // int result_0 = operation_number_1();
+    // std::cout << "result_0 = " << result_0 << " "
+    //           << ",clock_0_time = " << clock_0.Toc() << " ms" << std::endl;
 
     
     TicToc clock_1;
     clock_1.Tic();
 
-    int result_1 = multi_thread_task();
+    //int result_1 = multi_thread_task();
+    int result_1 = thread_pool_task();
     std::cout << "result_1 = " << result_1 << " "
               << ",clock_1_time = " << clock_1.Toc() << " ms" << std::endl;
 
     
     return 0;
 }
+
+// #include <iostream>
+// #include <thread>                // std::thread, std::this_thread::yield
+// #include <mutex>                // std::mutex, std::unique_lock
+// #include <condition_variable>    // std::condition_variable
+
+// std::mutex mtx;
+// std::condition_variable cv;
+
+// int cargo = 0;
+// bool shipment_available()
+// {
+//     return cargo != 0;
+// }
+
+// // 消费者线程.
+// void consume(int n)
+// {
+//     for (int i = 0; i < n; ++i) {
+//         std::unique_lock <std::mutex> lck(mtx);
+//         //cv.wait(lck, shipment_available);
+//         std::cout << cargo << '\n';
+//         cargo = 0;
+//     }
+// }
+
+// int main()
+// {
+//     std::thread consumer_thread(consume, 10); // 消费者线程.
+//     // 主线程为生产者线程, 生产 10 个物品.
+//     for (int i = 0; i < 10; ++i) {
+//         // while (shipment_available())
+//         //     std::this_thread::yield();
+//         std::unique_lock <std::mutex> lck(mtx);
+//         cargo = i + 1;
+//         //cv.notify_one();
+//     }
+
+//     consumer_thread.join();
+//     return 0;
+// }
