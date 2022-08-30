@@ -2,9 +2,10 @@ cmake_minimum_required(VERSION 3.0.2)
 project(ThreadPool)
 add_compile_options(
   -std=c++11
+  -std=c++14
   -Wreturn-type
   )
-
+  
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -pthread")
 SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
