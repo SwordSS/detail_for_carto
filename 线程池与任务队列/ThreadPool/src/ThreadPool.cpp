@@ -30,7 +30,8 @@ ThreadPool::~ThreadPool() {
     std::lock_guard<std::mutex> lock(mutex_);
     //CHECK(running_);
     running_ = false;
-    std::cout<< "running_=" << running_<< std::endl;
+    //std::cout<< "running_=" << running_<< std::endl;
+    cv.notify_all();
   }
   for (std::thread& thread : pool_) {
     thread.join();
@@ -49,6 +50,8 @@ void ThreadPool::NotifyDependenciesCompleted(Task* task) {
   task_queue_.push_back(it->second);
   // 从未准备好的任务队列中删除task
   tasks_not_ready_.erase(it);
+
+  cv.notify_one();
 }
 
 // 将task插入到tasks_not_ready_队列中, 并执行task的SetThreadPool()函数
@@ -97,7 +100,7 @@ void ThreadPool::DoWork() {
         task = std::move(task_queue_.front());
         task_queue_.pop_front();
       } else if (!running_) {
-        std::cout<< "return!!!"<< std::endl;
+        //std::cout<< "return!!!"<< std::endl;
         return;
       }
     }

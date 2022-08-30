@@ -18,6 +18,8 @@
   pow((1+2+3...10),2)+pow((1+2+3...+10,2))
 */
 
+std::vector<int> result_vec(7,0);
+
 namespace
 {
     int ref_task()
@@ -94,26 +96,84 @@ int multi_thread_task()
     return add_result_0;
 }
 
-int thread_pool_task()
+void thread_pool_task()
 {
-    std::vector<int> result_vec(7,0);
-    int& sum_result_0 = result_vec[0];
+    int reuslt = 0 ;
+    int thread_num = 3;
 
-    int thread_num = 4;
-    std::unique_ptr<ThreadPool> thread_pool = std::make_unique<ThreadPool>(1);
-    int result = 0;
-    std::unique_ptr<Task> task = std::make_unique<Task>();
-    task->SetWorkItem(
+    std::unique_ptr<ThreadPool> thread_pool = std::make_unique<ThreadPool>(thread_num);
+
+    //task_0
+    std::unique_ptr<Task> task_0 = std::make_unique<Task>();
+    task_0->SetWorkItem(
         [&](){
-            sum_result_0 = sum_task(1,5);
-            std::cerr << "sum_result_0 = "<< sum_result_0 << std::endl;
+            result_vec[0] = sum_task(1,5);
             }
         );
-    thread_pool->Schedule(std::move(task));
+    auto task_0_handle = thread_pool->Schedule(std::move(task_0));
+
+    //task_1
+    std::unique_ptr<Task> task_1 = std::make_unique<Task>();
+    task_1->SetWorkItem(
+        [&](){
+            result_vec[1] = sum_task(6,10);
+            }
+        );
+    auto task_1_handle = thread_pool->Schedule(std::move(task_1));
+
+    //task_2
+    std::unique_ptr<Task> task_2 = std::make_unique<Task>();
+    task_2->SetWorkItem(
+        [&](){
+            result_vec[2] = pow_task(add_task(result_vec[0],result_vec[1]),2);
+            }
+        );
     
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    std::cerr << "sum_result_0_out = "<< sum_result_0 << std::endl;
-    return sum_result_0;
+    task_2->AddDependency(task_0_handle);
+    task_2->AddDependency(task_1_handle);
+    auto task_2_handle = thread_pool->Schedule(std::move(task_2));
+
+    //task_3
+    std::unique_ptr<Task> task_3 = std::make_unique<Task>();
+    task_3->SetWorkItem(
+        [&](){
+            result_vec[3] = sum_task(1,5);
+            }
+        );
+    auto task_3_handle = thread_pool->Schedule(std::move(task_3));
+
+    //task_4
+    std::unique_ptr<Task> task_4 = std::make_unique<Task>();
+    task_4->SetWorkItem(
+        [&](){
+            result_vec[4] = sum_task(6,10);
+            }
+        );
+    auto task_4_handle = thread_pool->Schedule(std::move(task_4));
+
+    //task_5
+    std::unique_ptr<Task> task_5 = std::make_unique<Task>();
+    task_5->SetWorkItem(
+        [&](){
+            result_vec[5] = pow_task(add_task(result_vec[3],result_vec[4]),2);
+            }
+        );
+    
+    task_5->AddDependency(task_3_handle);
+    task_5->AddDependency(task_4_handle);
+    auto task_5_handle = thread_pool->Schedule(std::move(task_5));
+
+    //task_6
+    std::unique_ptr<Task> task_6 = std::make_unique<Task>();
+    task_6->SetWorkItem(
+        [&](){
+            result_vec[6] = add_task(result_vec[2],result_vec[5]);
+            }
+        );
+    
+    task_6->AddDependency(task_2_handle);
+    task_6->AddDependency(task_5_handle);
+    thread_pool->Schedule(std::move(task_6));    
 }
 
 int main(int argc,char** argv)
@@ -124,18 +184,24 @@ int main(int argc,char** argv)
     int result_ref = ref_task();
     std::cout << "result_ref = "<< result_ref << std::endl;
 
-    // int result_0 = operation_number_1();
-    // std::cout << "result_0 = " << result_0 << " "
-    //           << ",clock_0_time = " << clock_0.Toc() << " ms" << std::endl;
+    int result_0 = operation_number_1();
+    std::cout << "result_0 = " << result_0 << " "
+              << ",ref_task_time = " << clock_0.Toc() << " ms" << std::endl;
 
-    
     TicToc clock_1;
     clock_1.Tic();
 
-    //int result_1 = multi_thread_task();
-    int result_1 = thread_pool_task();
-    std::cout << "result_1 = " << result_1 << " "
-              << ",clock_1_time = " << clock_1.Toc() << " ms" << std::endl;
+    int result_1 = multi_thread_task();
+    std::cerr << "result_1 = " << result_1 << " "
+              << ",multi_thread_task_time = " << clock_1.Toc() << " ms" << std::endl;
+
+    
+    TicToc clock_2;
+    clock_2.Tic();
+
+    thread_pool_task();
+    std::cerr << "result_vec[6] = " << result_vec[6] << " "
+              << ",thread_pool_task_time = " << clock_2.Toc() << " ms" << std::endl;
 
     
     return 0;
@@ -160,7 +226,7 @@ int main(int argc,char** argv)
 // {
 //     for (int i = 0; i < n; ++i) {
 //         std::unique_lock <std::mutex> lck(mtx);
-//         //cv.wait(lck, shipment_available);
+//         cv.wait(lck, shipment_available);
 //         std::cout << cargo << '\n';
 //         cargo = 0;
 //     }
